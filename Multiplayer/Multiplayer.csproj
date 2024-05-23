@@ -81,6 +81,9 @@
     <ItemGroup>
         <Compile Remove="Patches\World\WorldStreamingInitPatch.cs" />
     </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Components\Networking\Jobs\" />
+    </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <!-- Copy to build folder -->

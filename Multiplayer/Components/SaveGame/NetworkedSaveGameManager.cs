@@ -1,6 +1,7 @@
 using System;
 using DV.InventorySystem;
 using DV.JObjectExtstensions;
+using DV.Shops;
 using DV.ThingTypes;
 using DV.Utils;
 using JetBrains.Annotations;
@@ -8,6 +9,7 @@ using Multiplayer.Components.Networking;
 using Multiplayer.Networking.Data;
 using Multiplayer.Networking.Listeners;
 using Newtonsoft.Json.Linq;
+using PlaceholderSoftware.WetStuff.Debugging;
 
 namespace Multiplayer.Components.SaveGame;
 
@@ -19,8 +21,14 @@ public class NetworkedSaveGameManager : SingletonBehaviour<NetworkedSaveGameMana
     protected override void Awake()
     {
         base.Awake();
+        Multiplayer.Log("Test ");
         if (!NetworkLifecycle.Instance.IsHost())
+        {
+            // Add Money Listener
+            Inventory.Instance.MoneyChanged += Client_OnMoneyChanged;
+
             return;
+        }
         Inventory.Instance.MoneyChanged += Server_OnMoneyChanged;
         LicenseManager.Instance.LicenseAcquired += Server_OnLicenseAcquired;
         LicenseManager.Instance.JobLicenseAcquired += Server_OnJobLicenseAcquired;
@@ -32,12 +40,23 @@ public class NetworkedSaveGameManager : SingletonBehaviour<NetworkedSaveGameMana
         if (UnloadWatcher.isUnloading)
             return;
         if (!NetworkLifecycle.Instance.IsHost())
+        {
+            Inventory.Instance.MoneyChanged -= Client_OnMoneyChanged;
+
             return;
+        }
         Inventory.Instance.MoneyChanged -= Server_OnMoneyChanged;
         LicenseManager.Instance.LicenseAcquired -= Server_OnLicenseAcquired;
         LicenseManager.Instance.JobLicenseAcquired -= Server_OnJobLicenseAcquired;
         LicenseManager.Instance.GarageUnlocked -= Server_OnGarageUnlocked;
     }
+
+    #region Client
+    private static void Client_OnMoneyChanged(double oldAmount, double newAmount)
+    {
+        NetworkLifecycle.Instance.Client.SendMoney((float)newAmount);
+    }
+    #endregion
 
     #region Server
 

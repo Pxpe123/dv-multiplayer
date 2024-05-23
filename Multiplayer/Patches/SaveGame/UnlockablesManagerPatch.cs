@@ -8,6 +8,6 @@ public static class UnlockablesManagerPatch
 {
     private static bool Prefix()
     {
-        return NetworkLifecycle.Instance.IsHost();
+        return true;
     }
 }

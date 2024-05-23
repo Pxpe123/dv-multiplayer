@@ -1,4 +1,4 @@
-namespace Multiplayer.Networking.Packets.Clientbound.SaveGame;
+namespace Multiplayer.Networking.Packets.Serverbound;
 
 public class ServerboundMoneyPacket
 {

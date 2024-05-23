@@ -70,6 +70,7 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<ServerboundTrainDeleteRequestPacket, NetPeer>(OnServerboundTrainDeleteRequestPacket);
         netPacketProcessor.SubscribeReusable<ServerboundTrainRerailRequestPacket, NetPeer>(OnServerboundTrainRerailRequestPacket);
         netPacketProcessor.SubscribeReusable<ServerboundLicensePurchaseRequestPacket, NetPeer>(OnServerboundLicensePurchaseRequestPacket);
+        netPacketProcessor.SubscribeReusable<ServerboundMoneyPacket, NetPeer>(OnServerboundMoneyPacket);
         netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket, NetPeer>(OnCommonChangeJunctionPacket);
         netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket, NetPeer>(OnCommonRotateTurntablePacket);
         netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket, NetPeer>(OnCommonTrainCouplePacket);
@@ -238,6 +239,13 @@ public class NetworkServer : NetworkManager
     }
 
     public void SendMoney(float amount)
+    {
+        SendPacketToAll(new ClientboundMoneyPacket {
+            Amount = amount
+        }, DeliveryMethod.ReliableUnordered, selfPeer);
+    }
+
+    public void SendMoneyServer(float amount)
     {
         SendPacketToAll(new ClientboundMoneyPacket {
             Amount = amount
@@ -610,6 +618,15 @@ public class NetworkServer : NetworkManager
         }
 
         trainCar.Rerail(networkedRailTrack.RailTrack, position, packet.Forward);
+    }
+
+    private void OnServerboundMoneyPacket(ServerboundMoneyPacket packet, NetPeer peer)
+    {
+        if (!TryGetServerPlayer(peer, out ServerPlayer player))
+            return;
+
+        LogDebug(() => $"Received new money amount ${packet.Amount}");
+        Inventory.Instance.SetMoney(packet.Amount);
     }
 
     private void OnServerboundLicensePurchaseRequestPacket(ServerboundLicensePurchaseRequestPacket packet, NetPeer peer)

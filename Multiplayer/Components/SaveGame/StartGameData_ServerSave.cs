@@ -1,10 +1,15 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using DV.InventorySystem;
 using DV.UserManagement;
+using Multiplayer.Components.Networking;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Patches.SaveGame;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
+using static DV.UI.ATutorialsMenuProvider;
 
 namespace Multiplayer.Components.SaveGame;
 
@@ -27,6 +32,8 @@ public class StartGameData_ServerSave : AStartGameData
         saveGameData.SetStringArray(SaveGameKeys.Licenses_Jobs, packet.AcquiredJobLicenses);
         saveGameData.SetStringArray(SaveGameKeys.Licenses_General, packet.AcquiredGeneralLicenses);
         saveGameData.SetStringArray(SaveGameKeys.Garages, packet.UnlockedGarages);
+        saveGameData.SetObject(SaveGameKeys.Storage_Inventory, JsonConvert.DeserializeObject<List<StorageItemData>>(packet.StorageInventory));
+        saveGameData.SetObject(SaveGameKeys.Storage_World, JsonConvert.DeserializeObject<List<StorageItemData>>(packet.StorageWorld));
 
         saveGameData.SetBool(SaveGameKeys.Tutorial_01_completed, true);
         saveGameData.SetBool(SaveGameKeys.Tutorial_02_completed, true);
@@ -58,10 +65,14 @@ public class StartGameData_ServerSave : AStartGameData
         LicenseManager.Instance.LoadData(saveGameData);
 
         if (saveGameData.GetString(SaveGameKeys.Game_mode) == "FreeRoam")
+        {
             LicenseManager.Instance.GrabAllGameModeSpecificUnlockables(SaveGameKeys.Game_mode);
-        else
+        }
+        else {
             StartingItemsController.Instance.AddStartingItems(saveGameData, true);
-
+            //StartingItemsController.Instance.AddItemToInventoryFallback(shovel, false);
+        }
+        Inventory.Instance.MoneyChanged += Client_OnMoneyChanged;
         // if (packet.Debt_existing_locos != null)
         //     LocoDebtController.Instance.LoadExistingLocosDebtsSaveData(packet.Debt_existing_locos.Select(JObject.Parse).ToArray());
         // if (packet.Debt_deleted_locos != null)
@@ -80,6 +91,13 @@ public class StartGameData_ServerSave : AStartGameData
         carsAndJobsLoadingFinished = true;
         yield break;
     }
+
+    #region Client
+    private static void Client_OnMoneyChanged(double oldAmount, double newAmount)
+    {
+        NetworkLifecycle.Instance.Client.SendMoney((float)newAmount);
+    }
+    #endregion
 
     public override string GetPostLoadMessage()
     {

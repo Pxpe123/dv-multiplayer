@@ -7,6 +7,7 @@ using Multiplayer.Components.SaveGame;
 using Multiplayer.Networking.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Multiplayer.Networking.Packets.Clientbound;
@@ -21,6 +22,8 @@ public class ClientboundSaveGameDataPacket
     public string[] UnlockedGarages { get; set; }
     public Vector3 Position { get; set; }
     public float Rotation { get; set; }
+    public string StorageInventory { get; set; }
+    public string StorageWorld { get; set; }
 
     public bool HasDebt { get; set; }
     // public string[] Debt_existing_locos { get; set; }
@@ -43,7 +46,8 @@ public class ClientboundSaveGameDataPacket
 
         JObject playerData = NetworkedSaveGameManager.Instance.Server_GetPlayerData(data, player.Guid);
 
-        return new ClientboundSaveGameDataPacket {
+        return new ClientboundSaveGameDataPacket
+        {
             GameMode = data.GetString(SaveGameKeys.Game_mode),
             SerializedDifficulty = difficulty.ToString(Formatting.None),
             Money = StartingItemsController.Instance == null || !StartingItemsController.Instance.itemsLoaded ? data.GetFloat(SaveGameKeys.Player_money).GetValueOrDefault(0) : (float)Inventory.Instance.PlayerMoney,
@@ -52,7 +56,9 @@ public class ClientboundSaveGameDataPacket
             UnlockedGarages = data.GetStringArray(SaveGameKeys.Garages),
             Position = playerData?.GetVector3(SaveGameKeys.Player_position) ?? LevelInfo.DefaultSpawnPosition,
             Rotation = playerData?.GetFloat(SaveGameKeys.Player_rotation) ?? LevelInfo.DefaultSpawnRotation.y,
-            HasDebt = data.GetFloat(SaveGameKeys.Debt_total).GetValueOrDefault(CareerManagerDebtController.Instance != null ? CareerManagerDebtController.Instance.NumberOfNonZeroPricedDebts : 0) > 0
+            HasDebt = data.GetFloat(SaveGameKeys.Debt_total).GetValueOrDefault(CareerManagerDebtController.Instance != null ? CareerManagerDebtController.Instance.NumberOfNonZeroPricedDebts : 0) > 0,
+            StorageInventory = JsonConvert.SerializeObject(data.GetObject<List<StorageItemData>>(SaveGameKeys.Storage_Inventory)),
+            StorageWorld = JsonConvert.SerializeObject(data.GetObject<List<StorageItemData>>(SaveGameKeys.Storage_World))
             // Debt_existing_locos = data.GetJObjectArray(SaveGameKeys.Debt_existing_locos)?.NotNull().Select(j => j.ToString()).ToArray(),
             // Debt_deleted_locos = data.GetJObjectArray(SaveGameKeys.Debt_deleted_locos)?.NotNull().Select(j => j.ToString()).ToArray(),
             // Debt_existing_jobs = data.GetJObjectArray(SaveGameKeys.Debt_existing_jobs)?.NotNull().Select(j => j.ToString()).ToArray(),

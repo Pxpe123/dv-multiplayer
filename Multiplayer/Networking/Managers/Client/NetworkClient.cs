@@ -566,6 +566,9 @@ public class NetworkClient : NetworkManager
     private void OnClientboundMoneyPacket(ClientboundMoneyPacket packet)
     {
         LogDebug(() => $"Received new money amount ${packet.Amount}");
+
+        if (Inventory.Instance.PlayerMoney.IsInRange(packet.Amount - 0.01, packet.Amount + 0.01)) return; // Money is the same amount, likely sent from Client.
+
         Inventory.Instance.SetMoney(packet.Amount);
     }
 
@@ -600,6 +603,15 @@ public class NetworkClient : NetworkManager
     private void SendPacketToServer<T>(T packet, DeliveryMethod deliveryMethod) where T : class, new()
     {
         SendPacket(serverPeer, packet, deliveryMethod);
+    }
+
+    public void SendMoney(float amount)
+    {
+        Log("Attempting to send Server a new money packet: " + amount);
+
+        SendPacketToServer(new ServerboundMoneyPacket {
+            Amount = amount
+        }, DeliveryMethod.ReliableOrdered);
     }
 
     public void SendSaveGameDataRequest()
